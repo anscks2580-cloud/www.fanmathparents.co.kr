@@ -78,6 +78,11 @@ body {
   letter-spacing:1px; margin: 28px 0 10px 4px; font-weight:600;
 }
 .empty-box { text-align:center; padding:32px 20px; color:var(--muted); font-size:13px; }
+.notice-item { padding:14px 0; border-bottom:1px solid rgba(255,255,255,0.08); }
+.notice-item:last-child { border-bottom:none; }
+.notice-title { font-weight:700; font-size:14px; margin-bottom:4px; }
+.notice-body { font-size:13px; color:var(--off-white); white-space:pre-wrap; line-height:1.6; margin-bottom:6px; }
+.notice-date { font-size:11px; color:var(--muted); }
 .logout-btn {
   width:100%; padding:12px; margin-top:8px;
   background:none; border:1px solid var(--border-soft);
@@ -129,8 +134,8 @@ body {
     </div>
 
     <div class="section-title">공지사항</div>
-    <div class="card">
-      <div class="empty-box">아직 준비 중인 기능입니다.</div>
+    <div id="notice-container" class="card">
+      <div class="empty-box">불러오는 중...</div>
     </div>
 
     <button class="logout-btn" onclick="doLogout()">로그아웃</button>
@@ -140,7 +145,7 @@ body {
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyD_eYNKzfa-aT41E3Dqt_HyJc6UeSR5ErA",
@@ -178,11 +183,52 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('i-teacher').textContent = s.teacherName ? (s.teacherName + ' T') : '배정 전';
     document.getElementById('i-classgroup').textContent = s.classGroup || '배정 전';
     show('view-info');
+    loadNotices(user.uid, s.classGroup);
   } catch (e) {
     console.error('정보 로딩 오류:', e);
     show('view-login');
   }
 });
+
+async function loadNotices(studentUid, classGroup) {
+  const container = document.getElementById('notice-container');
+  try {
+    const q = query(collection(db, 'notices'), orderBy('createdAt', 'desc'));
+    const snap = await getDocs(q);
+    const matched = snap.docs
+      .map(d => d.data())
+      .filter(n => {
+        if (n.target === 'all') return true;
+        if (n.target === 'class') return n.classGroup && n.classGroup === classGroup;
+        if (n.target === 'student') return (n.studentIds || []).includes(studentUid);
+        return false;
+      });
+
+    if (!matched.length) {
+      container.innerHTML = '<div class="empty-box">등록된 공지가 없습니다.</div>';
+      return;
+    }
+
+    container.innerHTML = matched.map(n => {
+      const dateStr = n.createdAt?.toDate ? n.createdAt.toDate().toLocaleDateString('ko-KR') : '';
+      return `
+        <div class="notice-item">
+          <div class="notice-title">${escapeHtml(n.title)}</div>
+          <div class="notice-body">${escapeHtml(n.body)}</div>
+          <div class="notice-date">${dateStr}</div>
+        </div>`;
+    }).join('');
+  } catch (e) {
+    console.error('공지 로딩 오류:', e);
+    container.innerHTML = '<div class="empty-box">공지를 불러오지 못했습니다.</div>';
+  }
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
 
 window.loginParent = async function() {
   const name = document.getElementById('p-name').value.trim();

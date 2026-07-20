@@ -201,6 +201,13 @@ async function loadNotices(studentUid, classGroup) {
       .map(d => d.data())
       .filter(n => {
         if (n.target === 'all') return true;
+        // 신규 방식: target === 'custom' — 여러 반/여러 학생 동시 지정 가능
+        if (n.target === 'custom') {
+          const classMatch = Array.isArray(n.classGroups) && n.classGroups.includes(classGroup);
+          const studentMatch = Array.isArray(n.studentIds) && n.studentIds.includes(studentUid);
+          return classMatch || studentMatch;
+        }
+        // 예전 방식 호환 (반 1개만 지정했던 공지)
         if (n.target === 'class') return n.classGroup && n.classGroup === classGroup;
         if (n.target === 'student') return (n.studentIds || []).includes(studentUid);
         return false;

@@ -83,6 +83,8 @@ body {
 .notice-title { font-weight:700; font-size:14px; margin-bottom:4px; }
 .notice-body { font-size:13px; color:var(--off-white); white-space:pre-wrap; line-height:1.6; margin-bottom:6px; }
 .notice-date { font-size:11px; color:var(--muted); }
+.notice-images { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+.notice-images img { width:72px; height:72px; object-fit:cover; border-radius:8px; border:1px solid rgba(255,255,255,0.1); cursor:pointer; }
 .logout-btn {
   width:100%; padding:12px; margin-top:8px;
   background:none; border:1px solid var(--border-soft);
@@ -211,10 +213,14 @@ async function loadNotices(studentUid, classGroup) {
 
     container.innerHTML = matched.map(n => {
       const dateStr = n.createdAt?.toDate ? n.createdAt.toDate().toLocaleDateString('ko-KR') : '';
+      const imagesHtml = (n.imageUrls && n.imageUrls.length)
+        ? `<div class="notice-images">${n.imageUrls.map(u => `<img src="${u}" onclick="window.open('${u}','_blank')">`).join('')}</div>`
+        : '';
       return `
         <div class="notice-item">
           <div class="notice-title">${escapeHtml(n.title)}</div>
           <div class="notice-body">${escapeHtml(n.body)}</div>
+          ${imagesHtml}
           <div class="notice-date">${dateStr}</div>
         </div>`;
     }).join('');

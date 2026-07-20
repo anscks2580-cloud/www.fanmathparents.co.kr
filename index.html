@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>학부모 | 송우찬수학학원</title>
+<style>
+:root {
+  --bg:#1A1230; --gold:#F0C040; --off-white:#F5F3F0;
+  --muted:#9B93AE; --border-soft:rgba(255,255,255,0.1);
+}
+* { box-sizing:border-box; }
+body {
+  margin:0; font-family:-apple-system, BlinkMacSystemFont, "Pretendard", sans-serif;
+  background:var(--bg); color:var(--off-white);
+  display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px;
+}
+.wrap { width:100%; max-width:420px; }
+.top-logo { display:flex; align-items:center; gap:10px; justify-content:center; margin-bottom:24px; }
+.top-logo span { font-size:15px; font-weight:700; }
+
+.card {
+  background: linear-gradient(145deg, #231848 0%, #1A1230 100%);
+  border:1px solid rgba(240,192,64,0.2);
+  border-radius:20px; padding:36px 28px;
+  box-shadow: 0 1px 0 rgba(240,192,64,0.5), 0 24px 60px rgba(0,0,0,0.5);
+  position:relative; overflow:hidden; margin-bottom:16px;
+}
+.card::before {
+  content:''; position:absolute; top:0; left:10%; right:10%; height:1px;
+  background:linear-gradient(90deg, transparent, rgba(240,192,64,0.8), transparent);
+}
+
+/* 로그인 화면 */
+.login-title { text-align:center; font-size:20px; font-weight:700; margin-bottom:6px; }
+.login-sub { text-align:center; font-size:13px; color:var(--muted); margin-bottom:28px; }
+.form-group { margin-bottom:16px; }
+.form-group label {
+  display:block; font-size:11px; color:var(--muted);
+  letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; font-weight:500;
+}
+.form-group input {
+  width:100%; padding:13px 16px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:8px; color:var(--off-white); font-size:15px;
+  font-family:inherit; outline:none;
+}
+.form-group input:focus { border-color:rgba(240,192,64,0.5); background:rgba(255,255,255,0.07); }
+.btn {
+  width:100%; padding:14px;
+  background:var(--gold); color:var(--bg);
+  font-size:15px; font-weight:700;
+  border:none; border-radius:8px;
+  cursor:pointer; font-family:inherit;
+}
+.btn:disabled { opacity:0.6; cursor:not-allowed; }
+.error-msg {
+  display:none; margin-top:12px; padding:12px 16px;
+  background:rgba(255,80,80,0.1); border:1px solid rgba(255,80,80,0.3);
+  border-radius:8px; font-size:13px; color:#ff9090; text-align:center;
+}
+.hint { font-size:11px; color:var(--muted); margin-top:14px; line-height:1.7; }
+
+/* 정보 화면 */
+.student-name { font-size:20px; font-weight:700; margin-bottom:4px; }
+.student-sub { font-size:12px; color:var(--muted); margin-bottom:24px; }
+.info-row {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:14px 0; border-bottom:1px solid rgba(255,255,255,0.08);
+}
+.info-row:last-child { border-bottom:none; }
+.info-label { font-size:12px; color:var(--muted); }
+.info-value { font-size:15px; font-weight:600; color:var(--gold); }
+.info-value.dim { color: var(--off-white); }
+.section-title {
+  font-size:12px; color:var(--muted); text-transform:uppercase;
+  letter-spacing:1px; margin: 28px 0 10px 4px; font-weight:600;
+}
+.empty-box { text-align:center; padding:32px 20px; color:var(--muted); font-size:13px; }
+.logout-btn {
+  width:100%; padding:12px; margin-top:8px;
+  background:none; border:1px solid var(--border-soft);
+  border-radius:8px; color:var(--muted); font-size:13px;
+  cursor:pointer; font-family:inherit;
+}
+.loading { text-align:center; padding:60px 0; color:var(--muted); font-size:14px; }
+.hidden { display:none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top-logo"><span>송우찬수학학원 · 학부모</span></div>
+
+  <!-- 로딩 -->
+  <div id="view-loading" class="loading">불러오는 중...</div>
+
+  <!-- 로그인 화면 -->
+  <div id="view-login" class="card hidden">
+    <div class="login-title">학부모 로그인</div>
+    <div class="login-sub">자녀 이름과 전화번호로 로그인하세요</div>
+
+    <div class="form-group">
+      <label>학생 이름</label>
+      <input type="text" id="p-name" placeholder="자녀 이름">
+    </div>
+    <div class="form-group">
+      <label>학생 전화번호</label>
+      <input type="password" id="p-pw" placeholder="자녀 등록 전화번호 (숫자만)">
+    </div>
+    <button class="btn" id="p-btn" onclick="loginParent()">로그인</button>
+    <div class="error-msg" id="p-err"></div>
+    <div class="hint">* 한 번 로그인하면 이 기기에서는 다시 입력하지 않아도 됩니다.</div>
+  </div>
+
+  <!-- 정보 화면 -->
+  <div id="view-info" class="hidden">
+    <div class="card">
+      <div class="student-name" id="i-name">-</div>
+      <div class="student-sub" id="i-grade">-</div>
+      <div class="info-row">
+        <span class="info-label">담임 선생님</span>
+        <span class="info-value" id="i-teacher">배정 전</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">소속 반</span>
+        <span class="info-value dim" id="i-classgroup">배정 전</span>
+      </div>
+    </div>
+
+    <div class="section-title">공지사항</div>
+    <div class="card">
+      <div class="empty-box">아직 준비 중인 기능입니다.</div>
+    </div>
+
+    <button class="logout-btn" onclick="doLogout()">로그아웃</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD_eYNKzfa-aT41E3Dqt_HyJc6UeSR5ErA",
+  authDomain: "songmath.firebaseapp.com",
+  projectId: "songmath",
+  storageBucket: "songmath.firebasestorage.app",
+  messagingSenderId: "936295436575",
+  appId: "1:936295436575:web:d1e201508719850cfbe02a"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+function show(viewId) {
+  ['view-loading','view-login','view-info'].forEach(id => {
+    document.getElementById(id).classList.toggle('hidden', id !== viewId);
+  });
+}
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) { show('view-login'); return; }
+
+  try {
+    const studentDoc = await getDoc(doc(db, 'students', user.uid));
+    if (!studentDoc.exists()) {
+      // 학생 계정이 아니면 로그인 화면으로
+      await signOut(auth);
+      show('view-login');
+      return;
+    }
+    const s = studentDoc.data();
+    document.getElementById('i-name').textContent = s.name || user.email.split('@')[0];
+    document.getElementById('i-grade').textContent = [s.branch, s.grade].filter(Boolean).join(' · ') || '';
+    document.getElementById('i-teacher').textContent = s.teacherName ? (s.teacherName + ' T') : '배정 전';
+    document.getElementById('i-classgroup').textContent = s.classGroup || '배정 전';
+    show('view-info');
+  } catch (e) {
+    console.error('정보 로딩 오류:', e);
+    show('view-login');
+  }
+});
+
+window.loginParent = async function() {
+  const name = document.getElementById('p-name').value.trim();
+  const pw = document.getElementById('p-pw').value.trim().replace(/-/g,'');
+  const btn = document.getElementById('p-btn');
+  const err = document.getElementById('p-err');
+  err.style.display = 'none';
+
+  if (!name || !pw) { err.textContent = '이름과 전화번호를 입력해주세요.'; err.style.display='block'; return; }
+
+  btn.disabled = true; btn.textContent = '로그인 중...';
+
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+    await signInWithEmailAndPassword(auth, name + '@songmath.kr', pw);
+    // 성공 시 onAuthStateChanged가 화면 전환 처리
+  } catch (e) {
+    err.textContent = '이름 또는 전화번호가 올바르지 않습니다.';
+    err.style.display = 'block';
+    btn.disabled = false; btn.textContent = '로그인';
+  }
+};
+
+window.doLogout = async function() {
+  await signOut(auth);
+};
+
+document.getElementById('p-name').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('p-pw').focus(); });
+document.getElementById('p-pw').addEventListener('keydown', e => { if(e.key==='Enter') loginParent(); });
+</script>
+</body>
+</html>

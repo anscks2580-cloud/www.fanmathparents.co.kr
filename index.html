@@ -151,7 +151,8 @@ body {
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, updateDoc, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyD_eYNKzfa-aT41E3Dqt_HyJc6UeSR5ErA",
@@ -190,11 +191,45 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('i-classgroup').textContent = s.classGroup || '배정 전';
     show('view-info');
     loadNotices(user.uid, s.classGroup);
+    setupPushNotifications(user.uid);
   } catch (e) {
     console.error('정보 로딩 오류:', e);
     show('view-login');
   }
 });
+
+const VAPID_KEY = 'BPT0tKVlIhyt_F8eigivwZccvoHnIMp1F6_OYHfmRyoB8_CVzxgv_5wkH0zYZ-bLlcRXpg9F5_YCtMTaKsZ6c7c';
+
+async function setupPushNotifications(uid) {
+  try {
+    if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
+
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return;
+
+    const registration = await navigator.serviceWorker.register('firebase-messaging-sw.js');
+    const messaging = getMessaging(app);
+    const token = await getToken(messaging, {
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: registration
+    });
+
+    if (token) {
+      await updateDoc(doc(db, 'students', uid), { parentFcmToken: token });
+    }
+
+    // 앱이 열려있는 동안 받는 알림도 화면에 표시
+    onMessage(messaging, (payload) => {
+      const title = payload.notification?.title || '알림';
+      const body = payload.notification?.body || '';
+      if (Notification.permission === 'granted') {
+        new Notification(title, { body });
+      }
+    });
+  } catch (e) {
+    console.error('푸시 알림 등록 오류:', e);
+  }
+}
 
 async function loadNotices(studentUid, classGroup) {
   const container = document.getElementById('notice-container');
